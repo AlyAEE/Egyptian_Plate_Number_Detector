@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import supervision as sv
+from paddleocr import PaddleOCR
 
 def plate_detection_model(video_path, model_path, device='cpu'):
     """
@@ -106,11 +107,12 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
         detections = sv.Detections.from_ultralytics(result)
         # Apply NMS to remove overlapping predictions
-        nms_detections = detections.with_nms(threshold=0.4, class_agnostic=True)
+        nms_detections = detections.with_nms(threshold=0.7, class_agnostic=True)
         texts = []
         for i in range(len(nms_detections.xyxy)):
             
             x1, y1, x2, y2 = map(int, nms_detections.xyxy[i])
+            bbox = (x1, y1, x2, y2)
             class_id = int(nms_detections.class_id[i]) if nms_detections.class_id is not None else -1
             confidence = float(nms_detections.confidence[i]) if nms_detections.confidence is not None else 0.0
 
@@ -119,20 +121,88 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             center_x = (x1 + x2) / 2
             center_y = (y1 + y2) / 2
 
-            texts.append((label, center_x, center_y))
+            texts.append((label, center_x, center_y, bbox))
 
             texts.sort(key=lambda x: x[1])  # Sort by center_x
-        results.append((frame_num, car_id, texts))
+        results.append((frame_num, car_id, plate_img, texts))
 
     return results
+
+def split_text_number_predictions(plate_predictions):
+    """
+    Splits detected plate components into text and numbers based on label.
+
+    Args:
+        detections (list): Output from detect_plate_number()
+
+    Returns:
+        List of tuples:
+            (frame_number, car_id, plate_img, number_detections, text_detections)
+    """
+    split_results = []
+
+    for frame_num, car_id, plate_img, texts in plate_predictions:
+        numbers = []
+        texts_only = []
+
+        for label, center_x, center_y, bbox in texts:
+            if label.isdigit():  # classify digits as numbers
+                numbers.append((label, center_x, center_y, bbox))
+            else:  # anything else is text
+                texts_only.append((label, center_x, center_y, bbox))
+
+        split_results.append((frame_num, car_id, plate_img, numbers, texts_only))
+
+    return split_results
+
+
+def ocr_text_class_regions(text_class_detections, lang='ar'):
+    """
+    Applies OCR to text-class plate regions using PaddleOCR.
+
+    Args:
+        text_class_detections (list): Output from split_text_number_classes.
+        lang (str): Language for PaddleOCR (default: 'ar').
+
+    Returns:
+        List of tuples: (frame_number, car_id, ocr_results)
+    """
+    ocr = PaddleOCR(use_angle_cls=True, lang=lang)
+    results = []
+
+    for frame_num, car_id, plate_img, _, texts_only in text_class_detections:
+        ocr_outputs = []
+        for _, _, _, (x1, y1, x2, y2) in texts_only:
+            # Ensure bbox is within bounds
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(plate_img.shape[1], x2)
+            y2 = min(plate_img.shape[0], y2)
+            roi = plate_img[y1:y2, x1:x2]
+
+            if roi.size == 0:
+                continue
+
+            result = ocr.ocr(roi, cls=True)
+            if result and isinstance(result[0], list) and len(result[0]) > 0:
+                text = result[0][0][1][0]  # Get recognized text
+                ocr_outputs.append(text)
+
+        results.append((frame_num, car_id, ocr_outputs))
+
+    return results
+
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
      # Run plate number detection
-    text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
+    plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
+    split_results = split_text_number_predictions(plate_predictions)
+    ocr_outputs = ocr_text_class_regions(split_results, lang='ar')
 
-    # for frame_num, car_id, texts, detections in text_results:
-        # print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
-    for frame_num, car_id, texts in text_results:
-        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
+    # for frame_num, car_id, plate_img, texts in plate_predictions:
+    #     print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
+
+    for frame_num, car_id, texts in ocr_outputs:
+        print(f"Frame {frame_num}, Car ID {car_id}, OCR Texts: {texts}")
