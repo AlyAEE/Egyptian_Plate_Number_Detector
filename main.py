@@ -4,6 +4,8 @@ from ultralytics import YOLO
 import supervision as sv
 from paddleocr import PaddleOCR
 import matplotlib.pyplot as plt
+import cv2
+
 
 def plate_detection_model(video_path, model_path, device='cpu'):
     """
@@ -193,8 +195,6 @@ def detect_text_with_paddleocr(text_class_detections, lang='ar'):
 
     return results
 
-import cv2
-
 def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color=(255, 0, 0)):
     """
     Draws bounding boxes and labels on plate images for each detected text or number.
@@ -220,6 +220,14 @@ def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color
 
     return annotated_results
 
+def display_annotated_plates_kaggle(annotated_plates, max_display=20):
+    for idx, (frame_num, car_id, plate_img) in enumerate(annotated_plates[:max_display]):
+        plt.figure(figsize=(8, 4))
+        rgb_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+        plt.imshow(rgb_img)
+        plt.title(f"Frame {frame_num} - Car ID {car_id}")
+        plt.axis('off')
+        plt.show()
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
@@ -239,8 +247,6 @@ if __name__ == "__main__":
 
     
 
-    for frame_num, car_id, plate_img in annotated_plates[:5]:
-        plt.imshow(cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB))
-        plt.title(f"Frame {frame_num} - Car ID {car_id}")
-        plt.axis('off')
-        plt.show()
+
+    # Display annotated results
+    display_annotated_plates_kaggle(annotated_plates)
