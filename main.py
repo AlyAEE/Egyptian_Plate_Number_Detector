@@ -109,7 +109,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         texts = []
 
         for i in range(len(detections.xyxy)):
-            print(len(detections.xyxy))
+            
             x1, y1, x2, y2 = map(int, detections.xyxy[i])
             class_id = int(detections.class_id[i]) if detections.class_id is not None else -1
             confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
@@ -117,7 +117,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
             # texts.append((label, confidence))
             texts.append(label)
-        results.append((frame_num, car_id, texts))
+        results.append((frame_num, car_id, texts, len(detections.xyxy)))
 
     return results
 
@@ -127,8 +127,8 @@ if __name__ == "__main__":
      # Run plate number detection
     text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
 
-    for frame_num, car_id, texts in text_results:
-        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
+    for frame_num, car_id, texts, detections in text_results:
+        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
 
     # cropped_plates = crop_plate_box(detections)
     # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
