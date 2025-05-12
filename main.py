@@ -107,6 +107,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
         detections = sv.Detections.from_ultralytics(result)
         texts = []
+        centers = []
         boxes_labels = []
         for i in range(len(detections.xyxy)):
             
@@ -115,15 +116,21 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
 
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
+
+            center_x = (x1 + x2) / 2
+            center_y = (y1 + y2) / 2
+
             # texts.append((label, confidence))
             # texts.append(label)
-            boxes_labels.append((x1, label))  # sort using x1
-        # results.append((frame_num, car_id, texts, len(detections.xyxy)))
-
-        # Sort by x1 (left to right)
-        boxes_labels.sort(key=lambda x: x[0])
-        plate_number = ''.join([label for _, label in boxes_labels])
-        results.append((frame_num, car_id, plate_number))
+            texts.append(label,center_x, center_y)
+            # boxes_labels.append((x1, label))  # sort using x1
+        results.append((frame_num, car_id, texts))
+        results.sort(key=lambda x: x[2][1])
+        
+        # # Sort by x1 (left to right)
+        # boxes_labels.sort(key=lambda x: x[0])
+        # plate_number = ''.join([label for _, label in boxes_labels])
+        # results.append((frame_num, car_id, plate_number))
 
     return results
 
