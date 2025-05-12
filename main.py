@@ -83,18 +83,55 @@ def crop_plate_box(detections, output_size=(640, 640)):
         # Crop and resize
         plate_crop = frame_img[y1:y2, x1:x2]
         resized_plate = cv2.resize(plate_crop, output_size)
-
         cropped_plates.append((frame_num, car_id, resized_plate))
 
     return cropped_plates
 
+def detect_plate_number(detections, text_model_path, device='cpu'):
+    """
+    Runs text detection on cropped license plates.
+
+    Args:
+        detections (list): Output from plate_detection_model.
+        text_model_path (str): Path to the text/number YOLO model.
+        device (str): Device for inference.
+
+    Returns:
+        List of tuples: (frame_number, car_id, detected_texts)
+    """
+    cropped_plates = crop_plate_box(detections)
+    text_model = YOLO(text_model_path).to(device=device)
+    results = []
+
+    for frame_num, car_id, plate_img in cropped_plates:
+        result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
+        detections = sv.Detections.from_ultralytics(result)
+        texts = []
+
+        for i in range(len(detections.xyxy)):
+            x1, y1, x2, y2 = map(int, detections.xyxy[i])
+            class_id = int(detections.class_id[i]) if detections.class_id is not None else -1
+            confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
+
+            label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
+            texts.append((label, confidence))
+
+        results.append((frame_num, car_id, texts))
+
+    return results
+
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
-    cropped_plates = crop_plate_box(detections)
+     # Run plate number detection
+    text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
 
-    for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
-        cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
+    for frame_num, car_id, texts in text_results[:10]:
+        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
+        
+    # cropped_plates = crop_plate_box(detections)
+    # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
+    #     cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
 
     # Define VideoWriter
     out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
@@ -107,4 +144,3 @@ if __name__ == "__main__":
 
 out.release()
 print("Video saved as output.avi")
-
