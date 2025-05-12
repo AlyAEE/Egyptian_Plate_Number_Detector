@@ -133,7 +133,8 @@ if __name__ == "__main__":
      # Run plate number detection
     text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
 
-    for frame_num, car_id, texts, detections in text_results:
+    # for frame_num, car_id, texts, detections in text_results:
+    for frame_num, car_id, texts in text_results:
         print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
 
     # cropped_plates = crop_plate_box(detections)
