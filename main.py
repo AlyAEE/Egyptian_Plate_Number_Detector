@@ -126,7 +126,6 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             centers.append((center_x, center_y))
             # boxes_labels.append((x1, label))  # sort using x1 
         results.append((frame_num, car_id, texts, centers))
-        results.sort(key=lambda x: x[3])
 
         # # Sort by x1 (left to right)
         # boxes_labels.sort(key=lambda x: x[0])
