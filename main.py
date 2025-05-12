@@ -60,7 +60,7 @@ def plate_detection_model(video_path, model_path, device='cpu'):
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
-    detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cpu')
+    detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='gpu')
 
     # Define VideoWriter
     out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
