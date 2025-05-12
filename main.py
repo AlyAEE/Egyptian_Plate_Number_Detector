@@ -49,9 +49,9 @@ def plate_detection_model(video_path, model_path, device='cpu'):
             cv2.putText(annotated_frame, f'ID: {track_id}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-            # Update best result if this confidence is higher
-            if (track_id not in best_results) or (confidence > best_results[track_id][3]):
-                best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
+            # # Update best result if this confidence is higher
+            # if (track_id not in best_results) or (confidence > best_results[track_id][3]):
+            best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
 
         frame_number += 1
 
