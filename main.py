@@ -104,7 +104,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
     results = []
 
     for frame_num, car_id, plate_img in cropped_plates:
-        result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.20)[0]
+        result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.10)[0]
         detections = sv.Detections.from_ultralytics(result)
         texts = []
         boxes_labels = []
