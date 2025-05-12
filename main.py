@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     print("Saving video...")
 
-    for frame_num, car_id, class_id, confidence, annotated_frame, plate_bbox in detections:
+    for frame_num, car_id, confidence, annotated_frame, plate_bbox in detections:
         print(f"Frame: {frame_num}, Car ID: {car_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
         out.write(annotated_frame)
 
