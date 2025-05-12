@@ -20,7 +20,7 @@ def plate_detection_model(video_path, model_path, device='cpu'):
     frame_generator = sv.get_video_frames_generator(source_path=video_path)
 
     frame_number = 0
-    results = []
+    best_results = {}
 
     first_frame = next(frame_generator)
     height, width = first_frame.shape[:2]
@@ -40,6 +40,7 @@ def plate_detection_model(video_path, model_path, device='cpu'):
         annotated_frame = frame.copy()
         for i in range(len(tracked)):
             x1, y1, x2, y2 = map(int, tracked.xyxy[i])
+            bbox = (x1, y1, x2, y2)
             track_id = int(tracked.tracker_id[i])
             class_id = int(tracked.class_id[i]) if tracked.class_id is not None else -1
             confidence = float(tracked.confidence[i]) if tracked.confidence is not None else 0.0
@@ -48,11 +49,13 @@ def plate_detection_model(video_path, model_path, device='cpu'):
             cv2.putText(annotated_frame, f'ID: {track_id}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-            results.append((frame_number, track_id, class_id, confidence, annotated_frame))
+            # Update best result if this confidence is higher
+            if (track_id not in best_results) or (confidence > best_results[track_id][3]):
+                best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
 
         frame_number += 1
 
-    return results, width, height
+    return list(best_results.values()), width, height
 
 
 if __name__ == "__main__":
@@ -64,8 +67,8 @@ if __name__ == "__main__":
 
     print("Saving video...")
 
-    for frame_num, car_id, class_id, confidence, annotated_frame in detections:
-        print(f"Frame: {frame_num}, Car ID: {car_id}, Class_id: {class_id}, Confidence: {confidence}")
+    for frame_num, car_id, class_id, confidence, annotated_frame, plate_bbox in detections:
+        print(f"Frame: {frame_num}, Car ID: {car_id}, Class_id: {class_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
         out.write(annotated_frame)
 
 out.release()
