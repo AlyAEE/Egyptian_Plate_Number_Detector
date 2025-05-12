@@ -114,8 +114,8 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
 
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
-            texts.append((label, confidence))
-
+            # texts.append((label, confidence))
+            texts.append(label)
         results.append((frame_num, car_id, texts))
 
     return results
