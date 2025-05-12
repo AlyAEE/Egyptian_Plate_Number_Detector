@@ -106,7 +106,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
         detections = sv.Detections.from_ultralytics(result)
         # Apply NMS to remove overlapping predictions
-        nms_detections = detections.with_nms(threshold=0.4)
+        nms_detections = detections.with_nms(threshold=0.2)
         texts = []
         for i in range(len(nms_detections.xyxy)):
             
