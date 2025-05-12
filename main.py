@@ -42,7 +42,6 @@ def plate_detection_model(video_path, model_path, device='cpu'):
             x1, y1, x2, y2 = map(int, tracked.xyxy[i])
             bbox = (x1, y1, x2, y2)
             track_id = int(tracked.tracker_id[i])
-            class_id = int(tracked.class_id[i]) if tracked.class_id is not None else -1
             confidence = float(tracked.confidence[i]) if tracked.confidence is not None else 0.0
 
             cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
@@ -106,32 +105,24 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
     for frame_num, car_id, plate_img in cropped_plates:
         result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
         detections = sv.Detections.from_ultralytics(result)
+        # Apply NMS to remove overlapping predictions
+        nms_detections = detections.with_nms(threshold=0.4)
         texts = []
-        centers = []
-        boxes_labels = []
-        for i in range(len(detections.xyxy)):
+        for i in range(len(nms_detections.xyxy)):
             
-            x1, y1, x2, y2 = map(int, detections.xyxy[i])
-            class_id = int(detections.class_id[i]) if detections.class_id is not None else -1
-            confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
+            x1, y1, x2, y2 = map(int, nms_detections.xyxy[i])
+            class_id = int(nms_detections.class_id[i]) if nms_detections.class_id is not None else -1
+            confidence = float(nms_detections.confidence[i]) if nms_detections.confidence is not None else 0.0
 
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
 
             center_x = (x1 + x2) / 2
             center_y = (y1 + y2) / 2
 
-            # texts.append((label, confidence))
-            # texts.append(label)
             texts.append((label, center_x, center_y))
-            # centers.append((center_x, center_y))
-            # boxes_labels.append((x1, label))  # sort using x1 
+
             texts.sort(key=lambda x: x[1])  # Sort by center_x
         results.append((frame_num, car_id, texts))
-
-        # # Sort by x1 (left to right)
-        # boxes_labels.sort(key=lambda x: x[0])
-        # plate_number = ''.join([label for _, label in boxes_labels])
-        # results.append((frame_num, car_id, plate_number))
 
     return results
 
@@ -145,19 +136,3 @@ if __name__ == "__main__":
         # print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
     for frame_num, car_id, texts in text_results:
         print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
-
-    # cropped_plates = crop_plate_box(detections)
-    # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
-    #     cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
-
-#     # Define VideoWriter
-#     out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
-
-#     print("Saving video...")
-
-#     for frame_num, car_id, confidence, annotated_frame, plate_bbox in detections:
-#         print(f"Frame: {frame_num}, Car ID: {car_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
-#         out.write(annotated_frame)
-
-# out.release()
-# print("Video saved as output.avi")
