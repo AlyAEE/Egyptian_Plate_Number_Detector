@@ -224,10 +224,8 @@ def display_annotated_plates_kaggle(annotated_plates, max_display=20):
     for idx, (frame_num, car_id, plate_img) in enumerate(annotated_plates[:max_display]):
         plt.figure(figsize=(8, 4))
         rgb_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
-        plt.imshow(rgb_img)
-        plt.title(f"Frame {frame_num} - Car ID {car_id}")
-        plt.axis('off')
-        plt.show()
+        # Save to file instead of showing
+        cv2.imwrite(f"outputs/annotated_{frame_num}_{car_id}.jpg", plate_img)
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
