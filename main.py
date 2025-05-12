@@ -107,7 +107,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         result = text_model.predict(plate_img, verbose=False, conf=0.25, iou=0.40)[0]
         detections = sv.Detections.from_ultralytics(result)
         texts = []
-
+        boxes_labels = []
         for i in range(len(detections.xyxy)):
             
             x1, y1, x2, y2 = map(int, detections.xyxy[i])
@@ -116,8 +116,14 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
 
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
             # texts.append((label, confidence))
-            texts.append(label)
-        results.append((frame_num, car_id, texts, len(detections.xyxy)))
+            # texts.append(label)
+            boxes_labels.append((x1, label))  # sort using x1
+        # results.append((frame_num, car_id, texts, len(detections.xyxy)))
+
+        # Sort by x1 (left to right)
+        boxes_labels.sort(key=lambda x: x[0])
+        plate_number = ''.join([label for _, label in boxes_labels])
+        results.append((frame_num, car_id, plate_number))
 
     return results
 
