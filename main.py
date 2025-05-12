@@ -122,10 +122,11 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
 
             # texts.append((label, confidence))
             # texts.append(label)
-            texts.append(label)
-            centers.append((center_x, center_y))
+            texts.append(label, center_x, center_y)
+            # centers.append((center_x, center_y))
             # boxes_labels.append((x1, label))  # sort using x1 
-        results.append((frame_num, car_id, texts, centers))
+            texts.sort(key=lambda x: x[1])  # Sort by center_x
+        results.append((frame_num, car_id, texts))
 
         # # Sort by x1 (left to right)
         # boxes_labels.sort(key=lambda x: x[0])
@@ -142,8 +143,8 @@ if __name__ == "__main__":
 
     # for frame_num, car_id, texts, detections in text_results:
         # print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
-    for frame_num, car_id, texts, centers in text_results:
-        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, Centers: {centers}")
+    for frame_num, car_id, texts in text_results:
+        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
 
     # cropped_plates = crop_plate_box(detections)
     # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
