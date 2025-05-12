@@ -133,14 +133,14 @@ if __name__ == "__main__":
     # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
     #     cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
 
-    # Define VideoWriter
-    out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
+#     # Define VideoWriter
+#     out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
 
-    print("Saving video...")
+#     print("Saving video...")
 
-    for frame_num, car_id, confidence, annotated_frame, plate_bbox in detections:
-        print(f"Frame: {frame_num}, Car ID: {car_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
-        out.write(annotated_frame)
+#     for frame_num, car_id, confidence, annotated_frame, plate_bbox in detections:
+#         print(f"Frame: {frame_num}, Car ID: {car_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
+#         out.write(annotated_frame)
 
-out.release()
-print("Video saved as output.avi")
+# out.release()
+# print("Video saved as output.avi")
