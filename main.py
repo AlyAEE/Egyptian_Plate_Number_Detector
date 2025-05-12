@@ -20,7 +20,7 @@ def plate_detection_model(video_path, model_path, device='cpu'):
     frame_generator = sv.get_video_frames_generator(source_path=video_path)
 
     frame_number = 0
-    best_results = {}
+    # best_results = {}
     results = []
     first_frame = next(frame_generator)
     height, width = first_frame.shape[:2]
@@ -52,15 +52,49 @@ def plate_detection_model(video_path, model_path, device='cpu'):
             # # Update best result if this confidence is higher
             # if (track_id not in best_results) or (confidence > best_results[track_id][3]):
             # best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
-            results.append((frame_number, track_id, class_id, confidence, annotated_frame, bbox))
+            results.append((frame_number, track_id, confidence, annotated_frame, bbox))
         frame_number += 1
 
     # return list(best_results.values()), width, height
     return results, width, height
 
+def crop_plate_box(detections, output_size=(640, 640)):
+    """
+    Crops and resizes license plate regions from frames.
+
+    Args:
+        detections (list): List of tuples from plate_detection_model.
+        output_size (tuple): Desired size for output cropped images.
+
+    Returns:
+        List of tuples: (frame_number, car_id, cropped_resized_plate_image)
+    """
+    cropped_plates = []
+
+    for frame_num, car_id, _, frame_img, plate_bbox in detections:
+        x1, y1, x2, y2 = plate_bbox
+
+        # Ensure coordinates are within frame bounds
+        x1 = max(0, x1)
+        y1 = max(0, y1)
+        x2 = min(frame_img.shape[1], x2)
+        y2 = min(frame_img.shape[0], y2)
+
+        # Crop and resize
+        plate_crop = frame_img[y1:y2, x1:x2]
+        resized_plate = cv2.resize(plate_crop, output_size)
+
+        cropped_plates.append((frame_num, car_id, resized_plate))
+
+    return cropped_plates
+
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
+    cropped_plates = crop_plate_box(detections)
+
+    for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
+        cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
 
     # Define VideoWriter
     out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
@@ -68,7 +102,7 @@ if __name__ == "__main__":
     print("Saving video...")
 
     for frame_num, car_id, class_id, confidence, annotated_frame, plate_bbox in detections:
-        print(f"Frame: {frame_num}, Car ID: {car_id}, Class_id: {class_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
+        print(f"Frame: {frame_num}, Car ID: {car_id}, Confidence: {confidence}, plate bbox: {plate_bbox}")
         out.write(annotated_frame)
 
 out.release()
