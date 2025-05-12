@@ -3,9 +3,9 @@ import numpy as np
 from ultralytics import YOLO
 import supervision as sv
 
-def detect_and_track_cars(video_path, model_path, device='cpu'):
+def plate_detection_model(video_path, model_path, device='cpu'):
     """
-    Detects and tracks cars in a video using YOLOv8 and ByteTrack.
+    Detects plates in a video using pre-trained yolo models and tracked using ByteTrack.
 
     Args:
         video_path (str): Path to the input video.
@@ -21,7 +21,13 @@ def detect_and_track_cars(video_path, model_path, device='cpu'):
 
     frame_number = 0
     results = []
+
+    first_frame = next(frame_generator)
+    height, width = first_frame.shape[:2]
     
+    # Reset generator to first frame again
+    frame_generator = sv.get_video_frames_generator(source_path=video_path)
+
     for frame in frame_generator:
         # Inference
         result = model.predict(frame, verbose=False)[0]
@@ -31,31 +37,37 @@ def detect_and_track_cars(video_path, model_path, device='cpu'):
 
         # Track objects
         tracked = tracker.update_with_detections(detections)
-
+        annotated_frame = frame.copy()
         for i in range(len(tracked)):
             x1, y1, x2, y2 = map(int, tracked.xyxy[i])
             track_id = int(tracked.tracker_id[i])
             class_id = int(tracked.class_id[i]) if tracked.class_id is not None else -1
             confidence = float(tracked.confidence[i]) if tracked.confidence is not None else 0.0
 
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, f'ID: {track_id}', (x1, y1 - 10),
+            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(annotated_frame, f'ID: {track_id}', (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-            results.append((frame_number, track_id, class_id, confidence, frame.copy()))
+            results.append((frame_number, track_id, class_id, confidence, annotated_frame))
 
         frame_number += 1
 
-    return results
+    return results, width, height
 
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
-    detections = detect_and_track_cars(video, model_path='models/Car_Detection_Model.pt', device='cpu')
+    detections, width, height = plate_detection_model(video, model_path='models/plate_box_Model.pt', device='cpu')
 
-    for frame_num, car_id, class_id, confidence, frame in detections:  # Show first 5 results for demo
-        print(f"Frame: {frame_num}, Car ID: {car_id}")
-        cv2.imshow("Tracked Frame", frame)
-        if cv2.waitKey(500) & 0xFF == ord('q'):
-            break
-    cv2.destroyAllWindows()
+    # Define VideoWriter
+    out = cv2.VideoWriter("output.avi", cv2.VideoWriter_fourcc(*'XVID'), 20, (width, height))
+
+    print("Saving video...")
+
+    for frame_num, car_id, class_id, confidence, annotated_frame in detections:  # Show first 5 results for demo
+        print(f"Frame: {frame_num}, Car ID: {car_id}, Class_id: {class_id}, Confidence: {confidence}")
+        out.write(annotated_frame)
+
+out.release()
+print("Video saved as output.avi")
+
