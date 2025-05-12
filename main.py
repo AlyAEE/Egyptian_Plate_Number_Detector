@@ -5,7 +5,7 @@ import supervision as sv
 from paddleocr import PaddleOCR
 import matplotlib.pyplot as plt
 import cv2
-
+import os
 
 def plate_detection_model(video_path, model_path, device='cpu'):
     """
@@ -195,37 +195,46 @@ def detect_text_with_paddleocr(text_class_detections, lang='ar'):
 
     return results
 
-def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color=(255, 0, 0)):
+def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color=(255, 0, 0), crop_output_dir="outputs/crops"):
     """
     Draws bounding boxes and labels on plate images for each detected text or number.
+    Also crops each bounding box into a new frame and saves it.
 
     Args:
         detections (list): Output from detect_plate_number().
         box_color (tuple): RGB color for the bounding box (default: green).
         text_color (tuple): RGB color for the label text (default: blue).
+        crop_output_dir (str): Directory to save cropped predictions.
 
     Returns:
         List of tuples: (frame_num, car_id, annotated_plate_img)
     """
+    os.makedirs(crop_output_dir, exist_ok=True)
     annotated_results = []
 
     for frame_num, car_id, plate_img, _, texts_only in detections:
         annotated_img = plate_img.copy()
 
-        for label, _, _, (x1, y1, x2, y2) in texts_only:
+        for idx, (label, _, _, (x1, y1, x2, y2)) in enumerate(texts_only):
+            # Draw rectangle and label
             cv2.rectangle(annotated_img, (x1, y1), (x2, y2), box_color, 2)
             cv2.putText(annotated_img, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
+
+            # Crop the prediction box and save it
+            crop = plate_img[y1:y2, x1:x2]
+            crop_filename = f"{crop_output_dir}/crop_{frame_num}_{car_id}_{idx}_{label}.jpg"
+            cv2.imwrite(crop_filename, crop)
 
         annotated_results.append((frame_num, car_id, annotated_img))
 
     return annotated_results
 
-def display_annotated_plates_kaggle(annotated_plates, max_display=20):
-    for idx, (frame_num, car_id, plate_img) in enumerate(annotated_plates[:max_display]):
-        plt.figure(figsize=(8, 4))
-        rgb_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
-        # Save to file instead of showing
-        cv2.imwrite(f"outputs/annotated_{frame_num}_{car_id}.jpg", plate_img)
+# def display_annotated_plates_kaggle(annotated_plates, max_display=20):
+#     for idx, (frame_num, car_id, plate_img) in enumerate(annotated_plates[:max_display]):
+#         plt.figure(figsize=(8, 4))
+#         rgb_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
+#         # Save to file instead of showing
+#         cv2.imwrite(f"outputs/annotated_{frame_num}_{car_id}.jpg", plate_img)
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
@@ -236,7 +245,7 @@ if __name__ == "__main__":
     # ocr_outputs = detect_text_with_paddleocr(split_results, lang='ar')
 
     # Annotate predictions on the plate images
-    annotated_plates = draw_text_predictions_on_plate(split_results)
+    annotated_results = draw_text_predictions_on_plate(split_results)
     # for frame_num, car_id, plate_img, texts in plate_predictions:
     #     print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
 
@@ -247,4 +256,4 @@ if __name__ == "__main__":
 
 
     # Display annotated results
-    display_annotated_plates_kaggle(annotated_plates)
+    # display_annotated_plates_kaggle(annotated_plates)
