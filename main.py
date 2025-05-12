@@ -109,6 +109,7 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
         texts = []
 
         for i in range(len(detections.xyxy)):
+            print(len(detections.xyxy))
             x1, y1, x2, y2 = map(int, detections.xyxy[i])
             class_id = int(detections.class_id[i]) if detections.class_id is not None else -1
             confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
