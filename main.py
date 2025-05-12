@@ -3,6 +3,7 @@ import numpy as np
 from ultralytics import YOLO
 import supervision as sv
 from paddleocr import PaddleOCR
+import matplotlib.pyplot as plt
 
 def plate_detection_model(video_path, model_path, device='cpu'):
     """
@@ -156,7 +157,7 @@ def split_text_number_predictions(plate_predictions):
     return split_results
 
 
-def ocr_text_class_regions(text_class_detections, lang='ar'):
+def detect_text_with_paddleocr(text_class_detections, lang='ar'):
     """
     Applies OCR to text-class plate regions using PaddleOCR.
 
@@ -192,6 +193,33 @@ def ocr_text_class_regions(text_class_detections, lang='ar'):
 
     return results
 
+import cv2
+
+def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color=(255, 0, 0)):
+    """
+    Draws bounding boxes and labels on plate images for each detected text or number.
+
+    Args:
+        detections (list): Output from detect_plate_number().
+        box_color (tuple): RGB color for the bounding box (default: green).
+        text_color (tuple): RGB color for the label text (default: blue).
+
+    Returns:
+        List of tuples: (frame_num, car_id, annotated_plate_img)
+    """
+    annotated_results = []
+
+    for frame_num, car_id, plate_img, _, texts_only in detections:
+        annotated_img = plate_img.copy()
+
+        for label, _, _, (x1, y1, x2, y2) in texts_only:
+            cv2.rectangle(annotated_img, (x1, y1), (x2, y2), box_color, 2)
+            cv2.putText(annotated_img, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
+
+        annotated_results.append((frame_num, car_id, annotated_img))
+
+    return annotated_results
+
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
@@ -199,10 +227,20 @@ if __name__ == "__main__":
      # Run plate number detection
     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
     split_results = split_text_number_predictions(plate_predictions)
-    ocr_outputs = ocr_text_class_regions(split_results, lang='ar')
+    # ocr_outputs = detect_text_with_paddleocr(split_results, lang='ar')
 
+    # Annotate predictions on the plate images
+    annotated_plates = draw_text_predictions_on_plate(split_results)
     # for frame_num, car_id, plate_img, texts in plate_predictions:
     #     print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
 
-    for frame_num, car_id, texts in ocr_outputs:
-        print(f"Frame {frame_num}, Car ID {car_id}, OCR Texts: {texts}")
+    # for frame_num, car_id, texts in ocr_outputs:
+    #     print(f"Frame {frame_num}, Car ID {car_id}, OCR Texts: {texts}")
+
+    
+
+    for frame_num, car_id, plate_img in annotated_plates[:5]:
+        plt.imshow(cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB))
+        plt.title(f"Frame {frame_num} - Car ID {car_id}")
+        plt.axis('off')
+        plt.show()
