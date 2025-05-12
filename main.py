@@ -122,11 +122,11 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
 
             # texts.append((label, confidence))
             # texts.append(label)
-            texts.append(label,center_x, center_y)
+            texts.append((label,center_x, center_y))
             # boxes_labels.append((x1, label))  # sort using x1
         results.append((frame_num, car_id, texts))
         results.sort(key=lambda x: x[2][1])
-        
+
         # # Sort by x1 (left to right)
         # boxes_labels.sort(key=lambda x: x[0])
         # plate_number = ''.join([label for _, label in boxes_labels])
