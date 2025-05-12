@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     # for frame_num, car_id, texts, detections in text_results:
         # print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
-    for frame_num, car_id, texts in text_results:
+    for frame_num, car_id, texts, centers in text_results:
         print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
 
     # cropped_plates = crop_plate_box(detections)
