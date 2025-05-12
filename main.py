@@ -134,8 +134,9 @@ if __name__ == "__main__":
     text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
 
     # for frame_num, car_id, texts, detections in text_results:
+        # print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
     for frame_num, car_id, texts in text_results:
-        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}, detections: {detections}")
+        print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
 
     # cropped_plates = crop_plate_box(detections)
     # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
