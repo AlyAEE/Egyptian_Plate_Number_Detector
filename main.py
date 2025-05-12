@@ -126,9 +126,9 @@ if __name__ == "__main__":
      # Run plate number detection
     text_results = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
 
-    for frame_num, car_id, texts in text_results[:10]:
+    for frame_num, car_id, texts in text_results:
         print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
-        
+
     # cropped_plates = crop_plate_box(detections)
     # for i, (frame_num, car_id, plate_img) in enumerate(cropped_plates[:10]):
     #     cv2.imwrite(f"plates/frame{frame_num}_car{car_id}.jpg", plate_img)
