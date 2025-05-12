@@ -52,7 +52,7 @@ def plate_detection_model(video_path, model_path, device='cpu'):
             # # Update best result if this confidence is higher
             # if (track_id not in best_results) or (confidence > best_results[track_id][3]):
             # best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
-            results = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
+            results.append((frame_number, track_id, class_id, confidence, annotated_frame, bbox))
         frame_number += 1
 
     # return list(best_results.values()), width, height
