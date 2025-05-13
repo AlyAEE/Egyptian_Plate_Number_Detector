@@ -148,15 +148,15 @@ def split_text_number_predictions(plate_predictions):
         numbers = []
         texts_only = []
 
-        for label, center_x, center_y, bbox in texts:
+        for label, _, _, _ in texts:
             if label.isdigit():  # classify digits as numbers
-                numbers.append((label, center_x, center_y, bbox))
+                numbers.append(label)
             else:  # anything else is text
-                texts_only.append((label, center_x, center_y, bbox))
+                texts_only.append(label)
 
-        split_results.append((frame_num, car_id, plate_img, numbers, texts_only))
+        split_results.append((frame_num, car_id, plate_img, numbers, texts_only[::-1]))
 
-    return split_results
+    return split_results    
 
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
