@@ -149,9 +149,11 @@ if __name__ == "__main__":
     # Run plate detection
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
      # Run plate number detection
+    print(detections)
     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
+    print(plate_predictions)
     split_results = split_text_number_predictions(plate_predictions)
-
+    print("Split Results:", split_results) 
     for frame_num, car_id, _, numbers, texts in split_results:
         print(f"Frame: {frame_num}, Car ID: {car_id}")
         print(f"  Numbers: {numbers}")
