@@ -143,17 +143,63 @@ def split_text_number_predictions(plate_predictions):
 
     return split_results    
 
+def plate_detection_from_image(image_path, model_path, device='cpu'):
+    """
+    Detects license plates in a single image using YOLO.
+    Args:
+        image_path (str): Path to input image.
+        model_path (str): Path to YOLOv8 model.
+        device (str): Device to run the model on.
+
+    Returns:
+        List of (frame_number, car_id, confidence, frame_image, bbox)
+    """
+    model = YOLO(model_path).to(device=device)
+    image = cv2.imread(image_path)
+    if image is None:
+        raise FileNotFoundError(f"Image not found: {image_path}")
+    
+    height, width = image.shape[:2]
+    result = model.predict(image, verbose=False)[0]
+    detections = sv.Detections.from_ultralytics(result)
+
+    results = []
+    for i in range(len(detections.xyxy)):
+        x1, y1, x2, y2 = map(int, detections.xyxy[i])
+        bbox = (x1, y1, x2, y2)
+        track_id = i  # Fake ID for single image
+        confidence = float(detections.confidence[i]) if detections.confidence is not None else 0.0
+        results.append((0, track_id, confidence, image, bbox))  # frame_number = 0
+    return results, width, height
+
+
+# if __name__ == "__main__":
+#     video = "videos/Screenshotjpg.mp4"
+#     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
+#     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
+#     split_results = split_text_number_predictions(plate_predictions)
+#     for frame_num, car_id, _, numbers, texts in split_results:
+#         print(f"Frame: {frame_num}, Car ID: {car_id}")
+#         print(f"  Numbers: {numbers}")
+#         print(f"  Texts: {texts}")
+
+
 if __name__ == "__main__":
-    video = "videos/Screenshotjpg.mp4"
-    print('Loading video:', video)
-    # Run plate detection
-    detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
-     # Run plate number detection
-    print(detections)
-    plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
-    print(plate_predictions)
+    image_path = "images/1.jpg"
+
+    detections, width, height = plate_detection_from_image(
+        image_path,
+        model_path='models/Plate_Box_Model.pt',
+        device='cuda'
+    )
+
+    plate_predictions = detect_plate_number(
+        detections,
+        text_model_path='models/Plate_Text_Numbers_Model.pt',
+        device='cuda'
+    )
+
     split_results = split_text_number_predictions(plate_predictions)
-    print("Split Results:", split_results) 
     for frame_num, car_id, _, numbers, texts in split_results:
         print(f"Frame: {frame_num}, Car ID: {car_id}")
         print(f"  Numbers: {numbers}")
