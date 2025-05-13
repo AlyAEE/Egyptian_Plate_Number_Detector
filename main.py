@@ -158,102 +158,14 @@ def split_text_number_predictions(plate_predictions):
 
     return split_results
 
-
-def detect_text_with_paddleocr(text_class_detections, lang='ar'):
-    """
-    Applies OCR to text-class plate regions using PaddleOCR.
-
-    Args:
-        text_class_detections (list): Output from split_text_number_classes.
-        lang (str): Language for PaddleOCR (default: 'ar').
-
-    Returns:
-        List of tuples: (frame_number, car_id, ocr_results)
-    """
-    ocr = PaddleOCR(use_angle_cls=True, lang=lang)
-    results = []
-
-    for frame_num, car_id, plate_img, _, texts_only in text_class_detections:
-        ocr_outputs = []
-        for _, _, _, (x1, y1, x2, y2) in texts_only:
-            # Ensure bbox is within bounds
-            x1 = max(0, x1)
-            y1 = max(0, y1)
-            x2 = min(plate_img.shape[1], x2)
-            y2 = min(plate_img.shape[0], y2)
-            roi = plate_img[y1:y2, x1:x2]
-
-            if roi.size == 0:
-                continue
-
-            result = ocr.ocr(roi, cls=True)
-            if result and isinstance(result[0], list) and len(result[0]) > 0:
-                text = result[0][0][1][0]  # Get recognized text
-                ocr_outputs.append(text)
-
-        results.append((frame_num, car_id, ocr_outputs))
-
-    return results
-
-def draw_text_predictions_on_plate(detections, box_color=(0, 255, 0), text_color=(255, 0, 0), crop_output_dir="outputs/crops"):
-    """
-    Draws bounding boxes and labels on plate images for each detected text or number.
-    Also crops each bounding box into a new frame and saves it.
-
-    Args:
-        detections (list): Output from detect_plate_number().
-        box_color (tuple): RGB color for the bounding box (default: green).
-        text_color (tuple): RGB color for the label text (default: blue).
-        crop_output_dir (str): Directory to save cropped predictions.
-
-    Returns:
-        List of tuples: (frame_num, car_id, annotated_plate_img)
-    """
-    os.makedirs(crop_output_dir, exist_ok=True)
-    annotated_results = []
-
-    for frame_num, car_id, plate_img, _, texts_only in detections:
-        annotated_img = plate_img.copy()
-
-        for idx, (label, _, _, (x1, y1, x2, y2)) in enumerate(texts_only):
-            # Draw rectangle and label
-            cv2.rectangle(annotated_img, (x1, y1), (x2, y2), box_color, 2)
-            cv2.putText(annotated_img, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, text_color, 2)
-
-            # Crop the prediction box and save it
-            crop = plate_img[y1:y2, x1:x2]
-            crop_filename = f"{crop_output_dir}/crop_{frame_num}_{car_id}_{idx}_{label}.jpg"
-            cv2.imwrite(crop_filename, crop)
-
-        annotated_results.append((frame_num, car_id, annotated_img))
-
-    return annotated_results
-
-# def display_annotated_plates_kaggle(annotated_plates, max_display=20):
-#     for idx, (frame_num, car_id, plate_img) in enumerate(annotated_plates[:max_display]):
-#         plt.figure(figsize=(8, 4))
-#         rgb_img = cv2.cvtColor(plate_img, cv2.COLOR_BGR2RGB)  # Convert from BGR to RGB
-#         # Save to file instead of showing
-#         cv2.imwrite(f"outputs/annotated_{frame_num}_{car_id}.jpg", plate_img)
-
 if __name__ == "__main__":
     video = "videos/madeup.mp4"
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
      # Run plate number detection
     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
     split_results = split_text_number_predictions(plate_predictions)
-    # ocr_outputs = detect_text_with_paddleocr(split_results, lang='ar')
 
-    # Annotate predictions on the plate images
-    annotated_results = draw_text_predictions_on_plate(split_results)
-    # for frame_num, car_id, plate_img, texts in plate_predictions:
-    #     print(f"Frame {frame_num}, Car ID {car_id}, Detected: {texts}")
-
-    # for frame_num, car_id, texts in ocr_outputs:
-    #     print(f"Frame {frame_num}, Car ID {car_id}, OCR Texts: {texts}")
-
-    
-
-
-    # Display annotated results
-    # display_annotated_plates_kaggle(annotated_plates)
+    for frame_num, car_id, _, numbers, texts in split_results:
+        print(f"Frame: {frame_num}, Car ID: {car_id}")
+        print(f"  Numbers: {numbers}")
+        print(f"  Texts: {texts}")
