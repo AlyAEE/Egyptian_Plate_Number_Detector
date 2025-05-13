@@ -1,11 +1,6 @@
 import cv2
-import numpy as np
 from ultralytics import YOLO
 import supervision as sv
-from paddleocr import PaddleOCR
-import matplotlib.pyplot as plt
-import cv2
-import os
 
 def plate_detection_model(video_path, model_path, device='cpu'):
     """
@@ -24,7 +19,6 @@ def plate_detection_model(video_path, model_path, device='cpu'):
     frame_generator = sv.get_video_frames_generator(source_path=video_path)
 
     frame_number = 0
-    # best_results = {}
     results = []
     first_frame = next(frame_generator)
     height, width = first_frame.shape[:2]
@@ -41,21 +35,14 @@ def plate_detection_model(video_path, model_path, device='cpu'):
 
         # Track objects
         tracked = tracker.update_with_detections(detections)
-        annotated_frame = frame.copy()
+        frame = frame.copy()
         for i in range(len(tracked)):
             x1, y1, x2, y2 = map(int, tracked.xyxy[i])
             bbox = (x1, y1, x2, y2)
             track_id = int(tracked.tracker_id[i])
             confidence = float(tracked.confidence[i]) if tracked.confidence is not None else 0.0
 
-            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(annotated_frame, f'ID: {track_id}', (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
-
-            # # Update best result if this confidence is higher
-            # if (track_id not in best_results) or (confidence > best_results[track_id][3]):
-            # best_results[track_id] = (frame_number, track_id, class_id, confidence, annotated_frame.copy(), bbox)
-            results.append((frame_number, track_id, confidence, annotated_frame, bbox))
+            results.append((frame_number, track_id, confidence, frame, bbox))
         frame_number += 1
 
     # return list(best_results.values()), width, height
@@ -117,8 +104,6 @@ def detect_plate_number(detections, text_model_path, device='cpu'):
             x1, y1, x2, y2 = map(int, nms_detections.xyxy[i])
             bbox = (x1, y1, x2, y2)
             class_id = int(nms_detections.class_id[i]) if nms_detections.class_id is not None else -1
-            confidence = float(nms_detections.confidence[i]) if nms_detections.confidence is not None else 0.0
-
             label = text_model.model.names[class_id] if class_id in text_model.model.names else "?"
 
             center_x = (x1 + x2) / 2
@@ -159,7 +144,7 @@ def split_text_number_predictions(plate_predictions):
     return split_results    
 
 if __name__ == "__main__":
-    video = "videos/madeup.mp4"
+    video = "videos/digi.mp4"
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
      # Run plate number detection
     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
