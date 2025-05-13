@@ -192,6 +192,7 @@ if __name__ == "__main__":
         model_path='models/Plate_Box_Model.pt',
         device='cuda'
     )
+    print(f"Width: {width}, Height: {height}, Detections: {detections}")
 
     plate_predictions = detect_plate_number(
         detections,
