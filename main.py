@@ -145,6 +145,8 @@ def split_text_number_predictions(plate_predictions):
 
 if __name__ == "__main__":
     video = "videos/Screenshotjpg.mp4"
+    print('Loading video:', video)
+    # Run plate detection
     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
      # Run plate number detection
     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
