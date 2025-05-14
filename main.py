@@ -173,35 +173,35 @@ def plate_detection_from_image(image_path, model_path, device='cpu'):
     return results, width, height
 
 
-# if __name__ == "__main__":
-#     video = "videos/Screenshotjpg.mp4"
-#     detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
-#     plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
-#     split_results = split_text_number_predictions(plate_predictions)
-#     for frame_num, car_id, _, numbers, texts in split_results:
-#         print(f"Frame: {frame_num}, Car ID: {car_id}")
-#         print(f"  Numbers: {numbers}")
-#         print(f"  Texts: {texts}")
-
-
 if __name__ == "__main__":
-    image_path = "images/1.jpg"
-
-    detections, width, height = plate_detection_from_image(
-        image_path,
-        model_path='models/Plate_Box_Model.pt',
-        device='cuda'
-    )
-    print(f"Width: {width}, Height: {height}, Detections: {detections}")
-
-    plate_predictions = detect_plate_number(
-        detections,
-        text_model_path='models/Plate_Text_Numbers_Model.pt',
-        device='cuda'
-    )
-
+    video = "videos/digi.mp4"
+    detections, width, height = plate_detection_model(video, model_path='models/Plate_Box_Model.pt', device='cuda')
+    plate_predictions = detect_plate_number(detections, text_model_path='models/Plate_Text_Numbers_Model.pt', device='cuda')
     split_results = split_text_number_predictions(plate_predictions)
     for frame_num, car_id, _, numbers, texts in split_results:
         print(f"Frame: {frame_num}, Car ID: {car_id}")
         print(f"  Numbers: {numbers}")
         print(f"  Texts: {texts}")
+
+
+# if __name__ == "__main__":
+#     image_path = "images/1.jpg"
+
+#     detections, width, height = plate_detection_from_image(
+#         image_path,
+#         model_path='models/Plate_Box_Model.pt',
+#         device='cuda'
+#     )   
+#     print(f"Width: {width}, Height: {height}, Detections: {detections}")
+
+#     plate_predictions = detect_plate_number(
+#         detections,
+#         text_model_path='models/Plate_Text_Numbers_Model.pt',
+#         device='cuda'
+#     )
+
+#     split_results = split_text_number_predictions(plate_predictions)
+#     for frame_num, car_id, _, numbers, texts in split_results:
+#         print(f"Frame: {frame_num}, Car ID: {car_id}")
+#         print(f"  Numbers: {numbers}")
+#         print(f"  Texts: {texts}")
